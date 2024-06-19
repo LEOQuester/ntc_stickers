@@ -1,0 +1,21 @@
+
+This text file provides clear and concise documentation for your software, covering important aspects such as frontend and backend technologies, database details, and security considerations.
+
+---
+
+### Software Documentation
+
+**Important Notes:**
+- The software is designed to be handled exclusively from a desktop view. The user interface is not optimized for mobile devices.
+- Backend functionality is implemented in PHP and can be found within the "api" folder.
+- The backend follows RESTful API guidelines for communication.
+- The backend utilizes SWITCH statements to determine the request method for processing incoming requests.
+- The frontend is built using HTML, Tailwind CSS, and JavaScript for enhanced user experience.
+- **Note:** Proper internet connection is required for the website to load CDN links efficiently.
+- The database used for the software is MySQL.
+- Database connection details are stored in the "config.php" file located in the root directory.
+
+**Security Information:**
+- Please note that security measures are not extensively implemented as this software is intended for home use only.
+
+---

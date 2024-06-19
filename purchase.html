@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purchases</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio,line-clamp,container-queries"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+    <link rel="stylesheet" type="text/css" href="./global.css" />
+    <link href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 text-gray-900">
+<div id="nav"></div>
+<div class="container mx-auto py-5">
+    <h1 class="text-2xl font-bold mb-4">Purchases</h1>
+    <div class="flex justify-end mb-4">
+        <button id="add-purchase-btn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+            Add New Purchase
+        </button>
+    </div>
+    <div id="purchase-table-container"></div>
+</div>
+
+<!-- Modal for adding/editing purchase -->
+<div id="purchase-modal" class="fixed z-10 inset-0 overflow-y-auto hidden">
+    <div class="flex items-center justify-center min-h-screen">
+        <div class="modal relative bg-white p-8 rounded shadow-lg w-96">
+            <h2 id="purchase-modal-title" class="text-lg font-bold mb-4"></h2>
+            <form id="purchase-form" class="space-y-4">
+                <input type="hidden" id="purchase-id" name="purchase_id">
+                <div class="form-group">
+                    <label for="purchase-category-id" class="block font-semibold">Category:</label>
+                    <select id="purchase-category-id" name="category_id" class="form-control rounded">
+                        
+                        <!-- Categories will be dynamically populated here -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="purchase-product-id" class="block font-semibold">Product:</label>
+                    <select id="purchase-product-id" name="product_id" class="form-control rounded">
+                        
+                        <!-- Products will be dynamically populated here -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="purchase-quantity" class="block font-semibold">Quantity:</label>
+                    <input type="number" id="purchase-quantity" name="quantity" class="form-control rounded">
+                </div>
+                <div class="form-group">
+                    <label for="purchase-price" class="block font-semibold">Purchase Price:</label>
+                    <input type="number" step="0.01" id="purchase-price" name="purchase_price" class="form-control rounded">
+                </div>
+                <div class="form-group">
+                    <label for="supplier-name" class="block font-semibold">Supplier Name:</label>
+                    <input type="text" id="supplier-name" name="supplier_name" class="form-control rounded">
+                </div>
+                <div class="form-group">
+                    <label for="purchase-date" class="block font-semibold">Purchase Date:</label>
+                    <input type="date" id="purchase-date" name="purchase_date" class="form-control rounded">
+                </div>
+                <div class="flex justify-end">
+                    <button type="button" id="save-purchase" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                        Save
+                    </button>
+                    <button type="button" id="cancel-purchase" class="ml-2 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<div id="footer"></div>
+<script src="./global.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+<script>
+    $(document).ready(function () {
+        const purchaseApiUrl = 'api/purchase.php';
+        const productApiUrl = 'api/product.php';
+        const categoryApiUrl = 'api/category.php';
+
+        let products = []; // Global variable to store products
+
+        // Fetch categories for dropdown
+        function fetchCategories() {
+            return $.ajax({
+                url: categoryApiUrl,
+                method: 'GET',
+                dataType: 'json'
+            });
+        }
+
+        // Fetch all products and store in global variable
+        function fetchAllProducts() {
+            return $.ajax({
+                url: productApiUrl,
+                method: 'GET',
+                dataType: 'json'
+            }).done(function(data) {
+                products = data;
+            });
+        }
+
+        // Fetch data and initialize DataTable
+        function fetchPurchasesAndInitializeTable() {
+            return $.ajax({
+                url: purchaseApiUrl,
+                method: 'GET',
+                dataType: 'json'
+            });
+        }
+
+        function initializePurchaseDataTable(data) {
+            const columns = [
+                { title: 'Product Name', data: 'product_name' },
+                { title: 'Serial Number', data: 'serial_number' },
+                { title: 'Category', data: 'category_name' },
+                { title: 'Quantity', data: 'quantity' },
+                { title: 'Purchase Price', data: 'purchase_price' },
+                { title: 'Supplier Name', data: 'supplier_name' },
+                { title: 'Purchase Date', data: 'purchase_date', render: function (data, type, row) {
+                    return data.split(' ')[0]; // Format date to display only the date part
+                }},
+                {
+                    title: 'Actions',
+                    render: function (data, type, row, meta) {
+                        return `
+                            <div class="flex">
+                                <button class="edit-btn bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                                    onclick="editPurchase(${row.id}, ${row.category_id}, ${row.product_id}, ${row.quantity}, ${row.purchase_price}, '${row.supplier_name}', '${row.purchase_date.split(' ')[0]}')">
+                                    Edit
+                                </button>
+                                <button class="delete-btn ml-2 bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+                                    onclick="deletePurchase(${row.id})">
+                                    Delete
+                                </button>
+                            </div>
+                        `;
+                    }
+                }
+            ];
+
+            $('#purchase-table-container').html('<table id="purchaseDataTable" class="display w-full"></table>');
+
+            $('#purchaseDataTable').DataTable({
+                data: data,
+                columns: columns,
+                paging: true,
+                searching: true,
+                ordering: true
+            });
+        }
+
+        // Populate categories dropdown
+        function populateCategoriesDropdown(categories, selectedCategoryId) {
+            const dropdown = $('#purchase-category-id');
+            dropdown.empty();
+            dropdown.append(`<option value="" selected>Select the category</option>`);
+            categories.forEach(function(category) {
+                const selected = category.id === selectedCategoryId ? 'selected' : '';
+                dropdown.append(`<option value="${category.id}" ${selected}>${category.name}</option>`);
+            });
+        }
+
+        // Populate products dropdown based on selected category
+        function populateProductsDropdown(selectedCategoryId) {
+            const dropdown = $('#purchase-product-id');
+            dropdown.empty();
+            products.forEach(function(product) {
+                if (product.category_id == selectedCategoryId) {
+                    dropdown.append(`<option value="${product.id}">${product.name}</option>`);
+                }
+            });
+        }
+
+        // Show add purchase modal
+        $('#add-purchase-btn').click(function () {
+            $('#purchase-modal').removeClass('hidden');
+            $('#purchase-modal-title').text('Add New Purchase');
+            $('#purchase-id').val('');
+            $('#purchase-quantity').val('');
+            $('#purchase-price').val('');
+            $('#supplier-name').val('');
+            $('#purchase-date').val(new Date().toISOString().split('T')[0]); // Set today's date by default
+            fetchCategories().done(function(categories) {
+                populateCategoriesDropdown(categories);
+            });
+        });
+
+        // Close modal on cancel button click
+        $('#cancel-purchase').click(function () {
+            $('#purchase-modal').addClass('hidden');
+        });
+
+        // Edit purchase (populate modal with data)
+        window.editPurchase = function(id, category_id, product_id, quantity, purchase_price, supplier_name, purchase_date) {
+            $('#purchase-modal').removeClass('hidden');
+            $('#purchase-modal-title').text('Edit Purchase');
+            $('#purchase-id').val(id);
+            $('#purchase-quantity').val(quantity);
+            $('#purchase-price').val(purchase_price);
+            $('#supplier-name').val(supplier_name);
+            $('#purchase-date').val(purchase_date);
+            fetchCategories().done(function(categories) {
+                populateCategoriesDropdown(categories, category_id);
+                populateProductsDropdown(category_id);
+                $('#purchase-product-id').val(product_id);
+            });
+        };
+
+        // Delete purchase
+        window.deletePurchase = function(id) {
+            const purchaseId = id;
+            if (confirm('Are you sure you want to delete this purchase?')) {
+                $.ajax({
+                    url: `${purchaseApiUrl}?id=${purchaseId}`,
+                    method: 'DELETE',
+                    success: function (response) {
+                        alert(response.message);
+                        fetchPurchasesAndInitializeTable().done(function (data) {
+                            initializePurchaseDataTable(data);
+                        });
+                    },
+                    error: function (xhr, status, error) {
+                        alert('Error deleting purchase: ' + error);
+                    }
+                });
+            }
+        };
+
+        // Save or update purchase
+        $('#save-purchase').click(function () {
+            const purchaseId = $('#purchase-id').val();
+            const productId = $('#purchase-product-id').val();
+            const quantity = $('#purchase-quantity').val();
+            const purchasePrice = $('#purchase-price').val();
+            const supplierName = $('#supplier-name').val();
+            const purchaseDate = $('#purchase-date').val();
+
+            const formData = {
+                product_id: productId,
+                quantity: quantity,
+                purchase_price: purchasePrice,
+                supplier_name: supplierName,
+                purchase_date: purchaseDate
+            };
+
+            let method, url;
+            if (purchaseId === '') {
+                method = 'POST';
+                url = purchaseApiUrl;
+            } else {
+                method = 'PUT';
+                url = `${purchaseApiUrl}?id=${purchaseId}`;
+            }
+
+            $.ajax({
+                url: url,
+                method: method,
+                contentType: 'application/json',
+                data: JSON.stringify(formData),
+                success: function(response) {
+                    alert(response.message);
+                    $('#purchase-modal').addClass('hidden');
+                    fetchPurchasesAndInitializeTable().done(function(data) {
+                        initializePurchaseDataTable(data);
+                    });
+                },
+                error: function (xhr, status, error) {
+                    alert('Error saving purchase: ' + error);
+                    console.error(xhr.responseText);
+                }
+            });
+        });
+
+        // Initialize DataTable on page load
+        fetchPurchasesAndInitializeTable().done(function (data) {
+            initializePurchaseDataTable(data);
+        }).fail(function (jqXHR, textStatus, errorThrown) {
+            console.error('Error fetching data:', textStatus, errorThrown);
+            $('#purchase-table-container').html('<p>Error fetching data</p>');
+        });
+
+        // Handle category change to load relevant products
+        $('#purchase-category-id').change(function() {
+            const categoryId = $(this).val();
+            populateProductsDropdown(categoryId);
+        });
+
+        // Prevent selecting product without selecting category
+        $('#purchase-product-id').focus(function() {
+            if (!$('#purchase-category-id').val()) {
+                alert('Please select a category first.');
+                $('#purchase-category-id').focus();
+            }
+        });
+
+        // Fetch products on initial page load
+        fetchAllProducts();
+    });
+</script>

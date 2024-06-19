@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Issue</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio,line-clamp,container-queries"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+    <link rel="stylesheet" type="text/css" href="./global.css" />
+    <link href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+<div id="nav"></div>
+<div class="container mx-auto p-8">
+    <h1 class="text-2xl font-bold mb-4">New Issue</h1>
+    <form id="issue-form" class="space-y-4">
+        <div class="form-group">
+            <label for="busNumberInput" class="block font-semibold">Bus Number:</label>
+            <input type="text" id="busNumberInput" name="bus_number" class="form-control rounded w-full">
+        </div>
+        <div class="form-group">
+            <label for="permitNumberInput" class="block font-semibold">Permit Number:</label>
+            <input type="text" id="permitNumberInput" name="permit_number" class="form-control rounded w-full">
+        </div>
+        <div class="form-group">
+            <label for="categorySelect" class="block font-semibold">Category:</label>
+            <select id="categorySelect" class="form-control rounded w-full">
+                <!-- Categories will be populated dynamically -->
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="productSelect" class="block font-semibold">Product:</label>
+            <select id="productSelect" class="form-control rounded w-full" disabled>
+                <!-- Products will be populated dynamically -->
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="quantityInput" class="block font-semibold">Quantity:</label>
+            <input type="number" id="quantityInput" name="quantity" class="form-control rounded w-full">
+        </div>
+        <div class="form-group">
+            <button type="button" id="addProductButton" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Add Product</button>
+        </div>
+    </form>
+
+    <div class="card flex flex-row">
+        <div>Issue for: </div>
+        <div id="bus_number"></div>
+        -
+        <div id="permit_number"></div>
+    </div>
+    <table id="queueTable" class="min-w-full divide-y divide-gray-200 mt-4">
+        <thead>
+            <tr>
+                <th class="px-6 py-3 bg-gray-50">Category Name</th>
+                <th class="px-6 py-3 bg-gray-50">Product Name</th>
+                <th class="px-6 py-3 bg-gray-50">Product Serial Number</th>
+                <th class="px-6 py-3 bg-gray-50">Quantity</th>
+                <th class="px-6 py-3 bg-gray-50">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Queue items will be added dynamically -->
+        </tbody>
+    </table>
+
+    <div class="flex justify-end mt-4">
+        <button id="saveIssueButton" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Save Issue</button>
+    </div>
+</div>
+<div id="footer"></div>
+<script src="./global.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function () {
+        const issueApiUrl = 'api/issue.php';
+        const productApiUrl = 'api/product.php';
+        const categoryApiUrl = 'api/category.php';
+
+        let products = []; // Global variable to store products
+        let categories = []; // Global variable to store categories
+
+        // Fetch categories for dropdown
+        function fetchCategories() {
+            return $.ajax({
+                url: categoryApiUrl,
+                method: 'GET',
+                dataType: 'json'
+            }).done(function(data) {
+                categories = data;
+            });
+        }
+
+        // Fetch all products and store in global variable
+        function fetchAllProducts() {
+            return $.ajax({
+                url: productApiUrl,
+                method: 'GET',
+                dataType: 'json'
+            }).done(function(data) {
+                products = data;
+            });
+        }
+
+        // Populate categories dropdown
+        function populateCategoriesDropdown(selectedCategoryId) {
+            const dropdown = $('#categorySelect');
+            dropdown.empty();
+            dropdown.append(`<option value="" selected>Select a category</option>`);
+            categories.forEach(function(category) {
+                const selected = category.id === selectedCategoryId ? 'selected' : '';
+                dropdown.append(`<option value="${category.id}" ${selected}>${category.name}</option>`);
+            });
+        }
+
+        // Populate products dropdown based on selected category
+        function populateProductsDropdown(selectedCategoryId) {
+            const dropdown = $('#productSelect');
+            dropdown.empty();
+            if (selectedCategoryId) {
+                products.forEach(function(product) {
+                    if (product.category_id == selectedCategoryId) {
+                        dropdown.append(`<option value="${product.id}" data-serial="${product.serial_number}">${product.name}</option>`);
+                    }
+                });
+                dropdown.removeAttr('disabled');
+            } else {
+                dropdown.attr('disabled', true);
+            }
+        }
+
+        // Fetch products and categories on page load
+        $.when(fetchCategories(), fetchAllProducts()).done(function() {
+            populateCategoriesDropdown();
+
+            // If editing an issue, fetch issue details and populate the form
+            if (window.location.search.includes('issue_id')) {
+                const issueId = getIssueIdFromParams();
+                $.get(issueApiUrl, function(data) {
+                    const issue = data.find(issue => issue.id === issueId);
+                    if (issue) {
+                        $('#busNumberInput').val(issue.bus_number);
+                        $('#permitNumberInput').val(issue.permit_number);
+                        document.getElementById("bus_number").innerText = issue.bus_number;
+                        document.getElementById("permit_number").innerText = issue.permit_number;
+                        console.log(issue);
+                        issue.products.forEach(product => {
+                            addProductToQueue(product.category_name, product.product_name, product.serial_number, product.quantity, product.product_id);
+                        });
+                    }
+                });
+            }
+        });
+
+        // Handle category change to load relevant products
+        $('#categorySelect').change(function() {
+            const categoryId = $(this).val();
+            populateProductsDropdown(categoryId);
+        });
+
+        // Add product to the queue
+        $('#addProductButton').click(function () {
+            const productId = $('#productSelect').val();
+            const productName = $('#productSelect option:selected').text();
+            const productSerialNumber = $('#productSelect option:selected').data('serial');
+            const categoryId = $('#categorySelect').val();
+            const categoryName = $('#categorySelect option:selected').text();
+            const bus_number = $('#busNumberInput').val();
+            const permit_number = $('#permitNumberInput').val();
+            const quantity = $('#quantityInput').val();
+
+            document.getElementById("bus_number").innerText = bus_number;
+            document.getElementById("permit_number").innerText = permit_number;
+            addProductToQueue(categoryName, productName, productSerialNumber, quantity, productId);
+        });
+
+        // Add product to queue table
+        function addProductToQueue(categoryName, productName, productSerialNumber, quantity, productId) {
+            const row = `<tr data-product-id="${productId}">
+                <td class="border border-gray-400 px-4 py-2">${categoryName}</td>
+                <td class="border border-gray-400 px-4 py-2">${productName}</td>
+                <td class="border border-gray-400 px-4 py-2">${productSerialNumber}</td>
+                <td class="border border-gray-400 px-4 py-2">${quantity}</td>
+                <td class="border border-gray-400 px-4 py-2">
+                    <button onclick="removeQueueItem(this)" class="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded">Delete</button>
+                </td>
+            </tr>`;
+            $('#queueTable tbody').append(row);
+        }
+
+        // Save issue to backend
+        $('#saveIssueButton').click(function () {
+            const issueData = {
+                bus_number: $('#busNumberInput').val(),
+                permit_number: $('#permitNumberInput').val(),
+                products: []
+            };
+
+            $('#queueTable tbody tr').each(function() {
+                const productId = $(this).data('product-id');
+                const quantity = $(this).find('td:nth-child(4)').text();
+                issueData.products.push({ product_id: productId, quantity: quantity });
+            });
+
+            // Determine whether it's an update or create request based on the presence of issue_id
+            const url = window.location.search.includes('issue_id') ? `${issueApiUrl}?id=${getIssueIdFromParams()}` : issueApiUrl;
+            const method = window.location.search.includes('issue_id') ? 'PUT' : 'POST';
+            console.log(issueData);
+            $.ajax({
+                url: url,
+                method: method,
+                contentType: 'application/json',
+                data: JSON.stringify(issueData),
+                success: function(response) {
+                    alert('Issue saved successfully');
+                    // Redirect or show success message as needed
+                },
+                error: function(xhr, status, error) {
+                    alert('Error saving issue: ' + error);
+                    console.error(xhr.responseText);
+                }
+            });
+        });
+
+        // Remove queue item
+        window.removeQueueItem = function(button) {
+            $(button).closest('tr').remove();
+        };
+
+        // Function to extract issue_id from URL params
+        function getIssueIdFromParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('issue_id');
+        }
+    });
+</script>
+</body>
+</html>

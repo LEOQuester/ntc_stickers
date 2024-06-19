@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Low Stock Products</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio,line-clamp,container-queries"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+    <link rel="stylesheet" type="text/css" href="./global.css" />
+    <link href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+<div id="nav"></div>
+<div class="container mx-auto p-5">
+    <h1 class="text-2xl font-bold mb-4">Low Stock Products</h1>
+    <table id="lowStockTable" class="min-w-full divide-y divide-gray-200 mt-4">
+        <thead>
+            <tr>
+                <th class="px-6 py-3 bg-gray-50">Product Name</th>
+                <th class="px-6 py-3 bg-gray-50">Serial Number</th>
+                <th class="px-6 py-3 bg-gray-50">Category</th>
+                <th class="px-6 py-3 bg-gray-50">Min Units</th>
+                <th class="px-6 py-3 bg-gray-50">Available Quantity</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Data will be populated dynamically -->
+        </tbody>
+    </table>
+</div>
+<div id="footer"></div>
+<script src="./global.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+<script>
+    $(document).ready(function () {
+        
+        $('#lowStockTable').DataTable({
+            "ajax": {
+                "url": "api/process.php",
+                "dataSrc": ""
+            },
+            "columns": [
+                { "data": "product_name" },
+                { "data": "serial_number" },
+                { "data": "category_name" },
+                { "data": "min_units" },
+                { "data": "available_qty" }
+            ]
+        });
+    });
+</script>
+</body>
+</html>

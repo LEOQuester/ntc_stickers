@@ -1,0 +1,114 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
+
+#mobile-menu {
+  transition: max-height 0.3s ease-out;
+  overflow: hidden;
+  max-height: 0;
+}
+#mobile-menu.open {
+  max-height: 500px; /* Adjust as needed */
+}
+body {
+  background-color: #f9fcfc;
+}
+/* BUS SEARCH by NUMBER/ */
+#businput {
+  outline: none;
+  border: 1px solid #c4c3c0;
+}
+#busNumberInput {
+  width: 100%;
+  padding: 15px 10px;
+  border: none;
+  border-bottom: 1px solid #645979;
+  outline: none;
+  border-radius: 5px 5px 0 0;
+  background-color: #ffffff;
+  font-size: 16px;
+}
+ul {
+  list-style: none;
+}
+.list {
+  /* width: 140px; */
+  background-color: #ffffffad;
+  border-radius: 0 0 5px 5px;
+  padding-left: 10px !important;
+  max-height: 300px;
+  overflow: hidden;
+  box-shadow: 0 7px 15px -7px #655a3f59;
+  border-radius: 20px;
+  position: absolute;
+  top: 51px;
+  left: 0;
+  backdrop-filter: blur(40px);
+}
+.list-items {
+  padding: 10px 5px;
+  animation-duration: 0.3s;
+  transition-duration: 0.3s;
+}
+.list-items:hover {
+  color: #750834;
+}
+
+/* FONT */
+h1,
+h2,
+h3,
+button,
+a,
+h4,
+h5,
+h6,
+input,
+span,
+li,
+p {
+  font-family: poppins;
+}
+a {
+  text-decoration: none;
+  font-size: 13px;
+}
+
+/* wave nav  */
+.loader {
+  display: block;
+  --height-of-loader: 4px;
+  --loader-color: #0071e2;
+  width: 130px;
+  height: var(--height-of-loader);
+  border-radius: 30px;
+  background-color: rgba(0, 0, 0, 0.2);
+  position: relative;
+}
+
+.loader::before {
+  content: "";
+  position: absolute;
+  background: var(--loader-color);
+  top: 0;
+  left: 0;
+  width: 0%;
+  height: 100%;
+  border-radius: 30px;
+  animation: moving 1s ease-in-out infinite;
+}
+
+@keyframes moving {
+  50% {
+    width: 100%;
+  }
+
+  100% {
+    width: 0;
+    right: 0;
+    left: unset;
+  }
+}
+#loader {
+  transition: opacity 0.5s ease;
+  opacity: 1;
+  display: flex; /* Ensure loader is initially displayed */
+}
